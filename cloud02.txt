@@ -1,0 +1,109 @@
+
+git 软件安装
+yum install -y git
+外地校区
+git clone git://124.193.128.166/nsd1806.git
+本地
+git clone git://172.40.53.65/nsd1806.git
+更新(必须进入 git 目录)
+git  pull
+
+什么是云计算
+基于互联网的相关服务的增加、使用和交付模式
+这种模式提供可用的、便捷的、按需的网络访问,进入可配合的计算机资源共享池
+这些资源能够快速被快速提供,秩序投入很少的管理工作,或与服务供应商进行很少的交互
+通常涉及通过互联网来提供动态易扩展且经常是虚拟化的资源
+iaas 基础设施即服务 提供的服务是对计算机基础设施的利用,通常分为公有云、私有云和混合云三种用法
+paas 平台即服务      怕爱上平台是指云环境中的应用基础设施服务,也可以说是中间件即服务
+saas 软件即服务
+
+
+openstack是有NASA(美国国家航空航天局)和rackspace合作研发的项目,后捐赠给Apache基金会,是一台iaas解决方案
+是一个开源的云计算机管理平台,以apache许可证为授权
+
+openstack主要组件
+horizon  用于管理openstack各种服务的,基本web的管理接口;通过图形实现创建用户,管理网络,启动实例等
+keystone 集中身份管理服务
+neutron  一种软件定义网络服务 ,用于穿件网络,子网,路由器,管理浮动ip地址,可以实现虚拟交换机、路由器,在项目中创建vpn
+cinder   未虚拟机管理存储卷的服务,未运行在nova中实例提供永久的块存储,可以通过快照备份,经常应用在实例存储环境中,如数据库文件
+nova     在节点上用于管理虚拟机的服务,nova是一个分布式的服务,能够与keystone交互实现认证,与glance交互实现镜像管理
+glance   扮演虚拟机镜像注册的角色,允许用户直接存储拷贝服务器镜像,这些镜像可以用了新建虚拟机的模板
+安装虚拟化软件包
+1装包
+qemu-kvm
+libvirt-client
+libvirt-daemon
+libvirt-daemon-driver-qemu
+
+2安装python工具包
+python-setuptools
+
+3安装packstack
+openstack-packstack
+
+
+selinux和firewall
+静态IP
+yum源 10173个
+卷组检查   vgs
+yum公钥检查 gpgcheck=1
+虚拟化软件包检查
+DNS服务器检查
+
+4 安装openstack
+[root@openstack ~]# yum install -y openstack-packstack
+
+4.1 创建应答文件
+packstack --gen-answer-file answer.ini (ini文件有颜色,能够明显区分错误)
+
+4.2修改应答文件  
+[root@openstack ~]# vim answer.ini
+  11 CONFIG_DEFAULT_PASSWORD=Taren1  //密码
+  42 CONFIG_SWIFT_INSTALL=n
+  75 CONFIG_NTP_SERVERS=192.168.1.254   //时间服务器的地址
+ 554 CONFIG_CINDER_VOLUMES_CREATE=n    //创建卷,已经手动创建过了
+ 840 CONFIG_NEUTRON_ML2_TYPE_DRIVERS=flat,vxlan   //驱动类型
+ 876 CONFIG_NEUTRON_ML2_VXLAN_GROUP=239.1.1.5  //设置组播地址,最后一个随意不能为0和255,其他固定
+ 910 CONFIG_NEUTRON_OVS_BRIDGE_MAPPINGS=physnet1:br-ex  //物理网桥的名称
+ 921 CONFIG_NEUTRON_OVS_BRIDGE_IFACES=br-ex:eth0   //br-ex桥的名称与eth0连接，管理eth0,网桥与哪个物理网卡连接
+ 936 CONFIG_NEUTRON_OVS_TUNNEL_IF=eth1
+1179 CONFIG_PROVISION_DEMO=n   //DEMO是否测试
+[root@openstack ~]# packstack    --answer-file=answer.ini
+ **** Installation completed successfully ******        //出现这个为成功
+
+步骤一：查看外部OVS网桥
+
+1）查看br-ex网桥配置（br-ex为OVS网桥设备）
+[root@openstack ~]# cat /etc/sysconfig/network-scripts/ifcfg-br-ex 
+ONBOOT="yes"
+NM_CONTROLLED="no" 
+IPADDR="192.168.1.1"
+PREFIX=24
+GATEWAY=192.168.1.254
+DEVICE=br-ex
+NAME=br-ex
+DEVICETYPE=ovs
+OVSBOOTPROTO="static"
+TYPE=OVSBridge
+
+2）查看eth0网卡配置（该网卡为OVS网桥的接口）
+[root@nova ~]# cat /etc/sysconfig/network-scripts/ifcfg-eth0 
+DEVICE=eth0
+NAME=eth0
+DEVICETYPE=ovs
+TYPE=OVSPort
+OVS_BRIDGE=br-ex
+ONBOOT=yes
+BOOTPROTO=none
+
+
+
+
+
+
+
+
+
+
+
+
