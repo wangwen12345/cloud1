@@ -1,0 +1,90 @@
+制作私有镜像仓库
+1）定义一个私有仓库
+[root@docker1 oo]# vim /etc/docker/daemon.json    //不写这个文件会报错(文件名不能错,要不然后面上传报错)
+{
+"insecure-registries" : ["192.168.1.10:5000"]    //使用私有仓库运行容器
+}
+
+[root@docker01 apache]# docker push 192.168.1.10:5000/myos:latest
+报错如下
+The push refers to a repository [192.168.1.10:5000/myos]
+Get https://192.168.1.10:5000/v1/_ping: http: server gave HTTP response to HTTPS client
+
+[root@docker1 oo]# systemctl restart docker
+[root@docker1 oo]# docker run -itd -p 5000:5000 registry   //开启私有仓库
+273be3d1f3280b392cf382f4b74fea53aed58968122eff69fd016f638505ee0e
+
+[root@docker1 oo]# curl 192.168.1.10:5000/v2/        //验证V2是仓库版本固定格式
+
+
+
+
+nfs监听端口2049
+挂载
+服务端:
+装包 yum -y install nfs-utils
+创建共享文件夹 mkdir /content          
+vim /etc/exports
+/content *(rw)
+重启服务
+[root@room9pc01 ~]# systemctl restart nfs-server.service
+[root@room9pc01 ~]# systemctl restart nfs-secure.service
+修改权限
+chmod 777 /content
+
+客户端
+装包
+yum -y install nfs-utils
+查看服务端共享
+showmount -e 192.168.1.254
+挂载共享文件夹
+vim /etc/fstab
+192.168.4.254:/content    /mnt/nfs    nfs  _netdev 0 0
+
+
+[root@docker1 ~]# docker run  -d -p 80:80 -v /mnt/nfs:/var/www/html -it myos:http 
+/mnt/nfs 是真实机的目录
+/var/www/html 是容器目录 -v给容器添加一个数据卷
+
+
+
+虚拟网卡
+[root@docker01 ~]# vim /etc/sysconfig/network-scripts/ifcfg-eth0   //真实网卡配置文件
+DEVICE="eth0"
+ ONBOOT="yes"
+ NM_CONTROLLED="no"
+ TYPE="Ethernet"
+ BOOTPROTO="static"
+ IPADDR="192.168.1.10"
+ NETMASK="255.255.255.0"
+ GATEWAY=192.168.1.254
+[root@docker01 ~]# vim /etc/sysconfig/network-scripts/ifcfg-eth0:1  //虚拟网卡配置文件
+DEVICE="eth0:1"
+ ONBOOT="yes"
+ NM_CONTROLLED="no"
+ TYPE="Ethernet"
+ BOOTPROTO="static"
+ IPADDR="192.168.1.11"
+ NETMASK="255.255.255.0"
+
+
+虚拟网桥是交换机
+创建虚拟网桥
+vim /etc/sysconfig/network-scripts/ifcfg-br0
+DEVICE="br0"                    //设备类型
+ ONBOOT="yes"
+ NM_CONTROLLED="no"
+ TYPE="bridge"                   //网络类型
+ BOOTPROTO="static"
+ IPADDR="192.168.1.15"      
+
+      
+ 
+
+
+
+
+
+
+
+
